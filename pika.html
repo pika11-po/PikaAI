@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pika - المنصة الأكاديمية الذكية للتحصيل الدراسي</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Font Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- PDF & Mammoth JS libraries for parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+        body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        .glow-bg {
+            background: radial-gradient(circle at 50% -20%, rgba(124, 58, 237, 0.25) 0%, rgba(15, 23, 42, 0) 70%);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-input {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .chat-bubble-user {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+        }
+        .chat-bubble-ai {
+            background: #1e293b;
+            color: #f1f5f9;
+            border-radius: 18px 18px 18px 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .drag-active {
+            border-color: #a855f7 !important;
+            background-color: rgba(168, 85, 247, 0.12) !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col glow-bg">
+
+    <!-- Header Navigation Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-purple-500/30">
+                    P
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-black text-2xl tracking-wide bg-gradient-to-r from-white via-slate-100 to-purple-400 bg-clip-text text-transparent">Pika AI</h1>
+                        <span class="bg-purple-500/20 text-purple-300 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-purple-500/30">1BAC + جميع المواد</span>
+                    </div>
+                    <p class="text-xs text-slate-400">المساعد الأكاديمي الذكي للدراسة والتحضير للامتحانات</p>
+                </div>
+            </div>
+
+            <!-- Subject Badges & Quick Stats -->
+            <div class="hidden md:flex items-center gap-3">
+                <div class="px-3 py-1.5 rounded-xl bg-purple-950/60 border border-purple-500/30 text-purple-300 text-xs font-bold flex items-center gap-2">
+                    <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-400"></i>
+                    <span>منهاج البكالوريا المغربي</span>
+                </div>
+                <div class="px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>جاهز للعرض المباشر</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Left Input Column (5 cols) -->
+        <section class="lg:col-span-5 space-y-6">
+            <div class="glass-card rounded-3xl p-6 shadow-2xl space-y-5 border border-slate-800">
+                
+                <!-- Subject Selector & Title -->
+                <div class="space-y-2">
+                    <label for="subjectSelect" class="block text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="book-open" class="w-4 h-4"></i>
+                        اختر المادة الدراسية:
+                    </label>
+                    <select id="subjectSelect" onchange="onSubjectChange()" class="w-full p-3 text-xs sm:text-sm rounded-xl glass-input text-slate-200 focus:ring-2 focus:ring-purple-500 outline-none transition font-bold">
+                        <option value="SVT">🧬 علوم الحياة والأرض (SVT)</option>
+                        <option value="Physics">⚡ الفيزياء والكيمياء</option>
+                        <option value="Math">📐 الرياضيات</option>
+                        <option value="Philosophy">🤔 الفلسفة</option>
+                        <option value="History">🗺️ التاريخ والجغرافيا</option>
+                        <option value="Arabic">📖 اللغة العربية</option>
+                        <option value="French">🇫🇷 اللغة الفرنسية</option>
+                        <option value="English">🇬🇧 اللغة الإنجليزية</option>
+                    </select>
+                </div>
+
+                <!-- File Dropzone Area -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">رفع الدرس أو المرجع (PDF, DOCX, TXT):</label>
+                    <div id="dropzone" 
+                         ondragover="handleDragOver(event)" 
+                         ondragleave="handleDragLeave(event)" 
+                         ondrop="handleDrop(event)"
+                         onclick="document.getElementById('fileInput').click()"
+                         class="border-2 border-dashed border-slate-700 hover:border-purple-500 rounded-2xl p-5 text-center cursor-pointer transition-all bg-slate-900/40 hover:bg-slate-800/60 group">
+                        <input type="file" id="fileInput" accept=".pdf,.docx,.txt" class="hidden" onchange="handleFileSelect(event)">
+                        
+                        <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform mb-2">
+                            <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                        </div>
+                        <p class="text-xs sm:text-sm font-bold text-slate-200">اضغط لرفع ملف أو اسحبه هنا</p>
+                        <p class="text-[11px] text-slate-400 mt-1">يستخرج النصوص تلقائياً للمعالجة</p>
+                    </div>
+                </div>
+
+                <!-- Selected File Banner -->
+                <div id="fileBanner" class="hidden bg-purple-950/40 border border-purple-500/40 p-3 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-8 h-8 rounded-lg bg-purple-600/20 text-purple-300 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                        </div>
+                        <div class="truncate">
+                            <p id="fileName" class="text-xs font-bold text-white truncate">document.pdf</p>
+                            <p id="fileSize" class="text-[10px] text-purple-300">0 KB</p>
+                        </div>
+                    </div>
+                    <button onclick="removeFile()" class="text-slate-400 hover:text-rose-400 p-1 transition">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Quick Presets Demo -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">دروس ونصوص جاهزة للعرض الفوري:</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button onclick="loadPreset('svt1')" class="text-right p-2.5 text-xs rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-purple-900/30 hover:border-purple-500/50 transition flex items-center justify-between text-slate-300 font-medium">
+                            <span class="truncate">🌍 SVT: الظواهر الجيولوجية الخارجية</span>
+                            <i data-lucide="chevron-left" class="w-4 h-4 opacity-40"></i>
+                        </button>
+                        <button onclick="loadPreset('svt2')" class="text-right p-2.5 text-xs rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-purple-900/30 hover:border-purple-500/50 transition flex items-center justify-between text-slate-300 font-medium">
+                            <span class="truncate">🌱 SVT: تنظيم تحلون الدم والبنكرياس</span>
+                            <i data-lucide="chevron-left" class="w-4 h-4 opacity-40"></i>
+                        </button>
+                        <button onclick="loadPreset('philo')" class="text-right p-2.5 text-xs rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-purple-900/30 hover:border-purple-500/50 transition flex items-center justify-between text-slate-300 font-medium">
+                            <span class="truncate">🤔 فلسفة: مفهوم الشخص والهوية</span>
+                            <i data-lucide="chevron-left" class="w-4 h-4 opacity-40"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lesson Text Area -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <label for="docText" class="font-bold text-slate-400">محتوى الدرس أو النص المطلوب:</label>
+                        <span id="wordCount" class="text-slate-500 font-semibold">عدد الكلمات: 0</span>
+                    </div>
+                    <textarea id="docText" rows="6" placeholder="قم بلصق محتوى الدرس أو المستند هنا لتبدأ التحليل..." class="w-full p-3.5 text-xs sm:text-sm rounded-xl glass-input text-slate-200 focus:ring-2 focus:ring-purple-500 outline-none transition custom-scrollbar leading-relaxed" oninput="updateWordCount()"></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button id="processBtn" onclick="processAcademicContent()" class="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    <span>توليد التلخيص واختبار المادة</span>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- Right Output Column (7 cols) -->
+        <section class="lg:col-span-7 flex flex-col space-y-4">
+
+            <!-- Navigation Tabs -->
+            <div class="flex bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 gap-1 shadow-md">
+                <button id="tabSummaryBtn" onclick="switchTab('summary')" class="flex-1 py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 bg-purple-600 text-white shadow-md shadow-purple-600/30">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    <span>التلخيص والمفاهيم</span>
+                </button>
+                <button id="tabQuizBtn" onclick="switchTab('quiz')" class="flex-1 py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                    <span>مولّد الاختبارات (QCM)</span>
+                </button>
+                <button id="tabChatBtn" onclick="switchTab('chat')" class="flex-1 py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+                    <i data-lucide="bot" class="w-4 h-4"></i>
+                    <span>المعلم الذكي Pika</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: SMART SUMMARY -->
+            <div id="tabSummary" class="glass-card rounded-3xl p-6 shadow-2xl flex-1 space-y-6 border border-slate-800">
+                
+                <!-- Initial Empty State -->
+                <div id="summaryEmpty" class="text-center py-20 space-y-3">
+                    <div class="w-16 h-16 mx-auto rounded-3xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
+                        <i data-lucide="book-open-check" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-200 text-base">في انتظار إضافة الدرس أو اختيار نموذج</h3>
+                    <p class="text-xs text-slate-400 max-w-sm mx-auto">قم برفع ملف أو كتابة الدرس ثم اضغط على زر توليد التلخيص للحصول على التحليل الأكاديمي.</p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="summaryLoading" class="hidden text-center py-20 space-y-4">
+                    <div class="inline-block w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-sm font-bold text-slate-300">جاري استخراج واستخلاص مفاهيم الدرس بواسطة Pika AI...</p>
+                </div>
+
+                <!-- Summary Content Result -->
+                <div id="summaryResult" class="hidden space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <span id="subjectBadge" class="bg-purple-500/20 text-purple-300 text-[10px] font-black px-2.5 py-1 rounded-md border border-purple-500/30">علوم الحياة والأرض</span>
+                            <h2 id="summaryTitle" class="text-base sm:text-lg font-bold text-white mt-1">عنوان الدرس</h2>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="copySummaryText()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition flex items-center gap-1.5 font-bold">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                <span>نسخ</span>
+                            </button>
+                            <button onclick="downloadSummaryFile()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition flex items-center gap-1.5 font-bold">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>تحميل TXT</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Paragraph -->
+                    <div class="p-4 bg-slate-900/80 rounded-2xl border border-slate-800">
+                        <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <i data-lucide="align-right" class="w-4 h-4"></i>
+                            الملخص المباشر للدرس
+                        </h4>
+                        <p id="summaryText" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+                    </div>
+
+                    <!-- Key Concepts List -->
+                    <div>
+                        <h4 class="text-xs font-bold text-pink-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <i data-lucide="key" class="w-4 h-4"></i>
+                            المفاهيم والمصطلحات المنهجية الأساسية
+                        </h4>
+                        <ul id="summaryBullets" class="space-y-2.5"></ul>
+                    </div>
+
+                    <!-- Curriculum Alignment Box -->
+                    <div class="p-4 bg-indigo-950/40 rounded-2xl border border-indigo-500/30 text-indigo-200">
+                        <h4 class="text-xs font-bold text-indigo-300 mb-1 flex items-center gap-2">
+                            <i data-lucide="award" class="w-4 h-4"></i>
+                            المهارات المطلوبة للامتحان
+                        </h4>
+                        <p id="summaryConclusion" class="text-xs text-indigo-200/90 leading-relaxed"></p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 2: INTERACTIVE QUIZ -->
+            <div id="tabQuiz" class="hidden glass-card rounded-3xl p-6 shadow-2xl flex-1 space-y-6 border border-slate-800">
+                
+                <div id="quizEmpty" class="text-center py-20 space-y-3">
+                    <div class="w-16 h-16 mx-auto rounded-3xl bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/20">
+                        <i data-lucide="help-circle" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-200 text-base">لا توجد أسئلة توليدية حالياً</h3>
+                    <p class="text-xs text-slate-400 max-w-sm mx-auto">قم بتحليل مادة الدرس لتوليد أسئلة QCM تفاعلية مع التصحيح والتعليل العلمي.</p>
+                </div>
+
+                <div id="quizResult" class="hidden space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <h3 class="font-bold text-white text-base">اختبار تفاعلي لمراجعة المادة</h3>
+                            <p class="text-xs text-slate-400">اختر الإجابات الصحيحة واطلع على التعليل العلمي الفوري</p>
+                        </div>
+                        <div class="text-left bg-purple-950/60 border border-purple-500/30 px-3 py-1.5 rounded-xl">
+                            <span class="text-[10px] text-purple-300 block">النتيجة الحالية</span>
+                            <span id="quizScore" class="font-black text-purple-400 text-base sm:text-lg">0 / 3</span>
+                        </div>
+                    </div>
+
+                    <div id="quizContainer" class="space-y-6"></div>
+
+                    <button onclick="resetCurrentQuiz()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition">
+                        إعادة محاولة الاختبار
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- TAB 3: PIKA TUTOR CHAT -->
+            <div id="tabChat" class="hidden glass-card rounded-3xl p-4 sm:p-6 shadow-2xl flex-1 flex flex-col h-[520px] border border-slate-800">
+                
+                <!-- Chat Window Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-purple-600/30">
+                            P
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-white">المعلم الذكي Pika</h3>
+                            <p class="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> جاهز للإجابة والتوضيح
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="clearChatLog()" class="text-xs text-slate-400 hover:text-slate-200 p-2 transition" title="تفريغ المحادثة">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Chat Messages History -->
+                <div id="chatLog" class="flex-1 overflow-y-auto py-4 space-y-4 custom-scrollbar text-xs sm:text-sm">
+                    <div class="flex gap-2.5 items-start">
+                        <div class="w-7 h-7 rounded-lg bg-purple-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-1 font-bold">
+                            P
+                        </div>
+                        <div class="chat-bubble-ai p-3.5 max-w-[85%] leading-relaxed">
+                            مرحباً بك! أنا معلمك الذكي Pika. اطرح عليّ أي سؤال يتعلق بالدرس المرفوع وسأقوم بشرحه لك مع إعطاء أمثلة توضيحية.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input Form -->
+                <form onsubmit="sendChatMessage(event)" class="mt-3 pt-3 border-t border-slate-800 flex gap-2">
+                    <input id="chatField" type="text" placeholder="اسأل المعلم Pika عن أي مفهوم أو نقطة غير واضحة..." class="flex-1 px-4 py-2.5 text-xs sm:text-sm rounded-xl glass-input text-slate-200 focus:ring-2 focus:ring-purple-500 outline-none transition">
+                    <button type="submit" id="sendBtn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl font-bold transition flex items-center justify-center text-xs sm:text-sm gap-1 shadow-md shadow-purple-600/20">
+                        <span>إرسال</span>
+                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    </button>
+                </form>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900/90 border-t border-slate-800 text-slate-400 text-xs py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>© 2026 تطبيق Pika الأكاديمي - مخصص لمعرض الذكاء الاصطناعي والدراسة والتحصيل</p>
+            <p class="text-slate-500">يدعم السلك الثانوي التأهيلي والامتحان الجهوي المغربي (1BAC)</p>
+        </div>
+    </footer>
+
+    <!-- App JavaScript Logic -->
+    <script>
+        // Preset sample database
+        const PRESET_DATA = {
+            svt1: {
+                subject: "SVT",
+                text: `درس: استرداد التاريخ الجيولوجي لمنطقة رسوبية (الظواهر الجيولوجية الخارجية)
+تستوجب دراسة التاريخ الجيولوجي لمنطقة رسوبية تطبيق المبادئ الاستراتيغرافية الأساسية:
+1. مبدأ التراكب: تكون كل طبقة رسوبية أحدث من الطبقة التي توجد تحتها وأقدم من التي توجد فوقها في ظروف الترسب العادية.
+2. مبدأ الاستمرار: تكون للطبقة الرسوبية نفس العمر على طول امتدادها المباشر طالما حافظت على نفس السحنة.
+3. مبدأ تقاطع الأحداث: كل تشوه تكتوني (مثل الفالق أو الاندفاع الصخري) يكون أحدث من الطبقات التي يخترقها.
+4. المستحثات الطبقية: يتميز المستحث الطبقي بدورة حياتية قصيرة وتوزيع جغرافي واسع، مما يتيح التأريخ النسبي والدقيق للطبقات الرسوبية ومقارنتها عبر مسافات شاسعة.`
+            },
+            svt2: {
+                subject: "SVT",
+                text: `درس: تنظيم تحلون الدم وتدخل الهرمونات البنكرياسية
+يعتبر تحلون الدم (تركيز الغلوكوز في الدم) ثابتاً بيولوجياً عند الإنسان يقدر بـ 1g/L تقريباً.
+يتم تنظيم تحلون الدم بفضل جهاز هرموني بنكرياسي دقيق:
+- هرمون الأنسولين (Insulin): تفرزه خلايا بيتا (β) في جزيرات لcells لخفض نسبة السكر الزائدة وتحفيز ادخار الغلوكوز على شكل غليكوجين في الكبد والعضلات (Glycogénogenèse).
+- هرمون الغلوكادون (Glucagon): تفرزه خلايا ألفا (α) لرفع تحلون الدم عند انخفاضه عبر حث تحلل الغليكوجين الكبدي (Glycogénolyse).`
+            },
+            philo: {
+                subject: "Philosophy",
+                text: `درس: مفهوم الشخص والهوية (مفهوم الشخص)
+يتناول هذا المحور إشكالية تحديد المحدد الأساسي لهوية الشخص وما يجعله هو هو رغم التغيرات التي تطرأ عليه عبر الزمن:
+- موقف رينيه ديكارت: يرى أن الفكر والوعي العقلاني هما جوهر هوية الشخص ("أنا أفكر إذن أنا موجود").
+- موقف جون لوك: يربط هوية الشخص بالوعي الحسي المقترن بالذاكرة، حيث تشكل الخبرات والتجارب الماضية امتداداً لشخصية الفرد.
+- موقف أرتور شوبنهاور: يرى أن الهوية لا تتأسس على العقل أو الذاكرة المهددة بالنسيان، بل على إرادة الحياة باعتبارها نواة ثابتة ولانواعية في الإنسان.`
+            }
+        };
+
+        // State Variables
+        let currentText = '';
+        let currentAnalysis = null;
+        let quizScore = 0;
+        let answeredQuestions = new Set();
+
+        const API_KEY = "";
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
+
+        window.onload = function() {
+            lucide.createIcons();
+            loadPreset('svt1');
+        };
+
+        function onSubjectChange() {
+            // Updated active subject focus
+        }
+
+        function loadPreset(key) {
+            if (PRESET_DATA[key]) {
+                document.getElementById('subjectSelect').value = PRESET_DATA[key].subject;
+                document.getElementById('docText').value = PRESET_DATA[key].text;
+                updateWordCount();
+                removeFile();
+            }
+        }
+
+        function updateWordCount() {
+            const val = document.getElementById('docText').value.trim();
+            const count = val ? val.split(/\s+/).length : 0;
+            document.getElementById('wordCount').innerText = `عدد الكلمات: ${count}`;
+        }
+
+        // File Drag & Drop Handling
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('dropzone').classList.add('drag-active');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            document.getElementById('dropzone').classList.remove('drag-active');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('dropzone').classList.remove('drag-active');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processUploadedFile(e.dataTransfer.files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files && e.target.files[0]) {
+                processUploadedFile(e.target.files[0]);
+            }
+        }
+
+        async function processUploadedFile(file) {
+            showFileBanner(file.name, (file.size / 1024).toFixed(1) + ' KB');
+            const ext = file.name.split('.').pop().toLowerCase();
+            let text = '';
+
+            try {
+                if (ext === 'txt') {
+                    text = await file.text();
+                } else if (ext === 'docx') {
+                    const buf = await file.arrayBuffer();
+                    const res = await mammoth.extractRawText({ arrayBuffer: buf });
+                    text = res.value;
+                } else if (ext === 'pdf') {
+                    const buf = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+                    let full = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const content = await page.getTextContent();
+                        full += content.items.map(it => it.str).join(' ') + '\n';
+                    }
+                    text = full;
+                }
+
+                if (text.trim()) {
+                    document.getElementById('docText').value = text.trim();
+                    updateWordCount();
+                } else {
+                    alert('تعذر استخراج النص من الملف المرفوع!');
+                }
+            } catch (err) {
+                console.error('File Error:', err);
+                alert('حدث خطأ أثناء قراءة المستند.');
+            }
+        }
+
+        function showFileBanner(name, size) {
+            document.getElementById('fileName').innerText = name;
+            document.getElementById('fileSize').innerText = size;
+            document.getElementById('fileBanner').classList.remove('hidden');
+        }
+
+        function removeFile() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileBanner').classList.add('hidden');
+        }
+
+        // Tab Switching Logic
+        function switchTab(name) {
+            ['summary', 'quiz', 'chat'].forEach(t => {
+                document.getElementById('tab' + cap(t)).classList.add('hidden');
+                const btn = document.getElementById('tab' + cap(t) + 'Btn');
+                btn.classList.remove('bg-purple-600', 'text-white', 'shadow-md', 'shadow-purple-600/30');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById('tab' + cap(name)).classList.remove('hidden');
+            const activeBtn = document.getElementById('tab' + cap(name) + 'Btn');
+            activeBtn.classList.add('bg-purple-600', 'text-white', 'shadow-md', 'shadow-purple-600/30');
+            activeBtn.classList.remove('text-slate-400');
+        }
+
+        function cap(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        // Process Academic Content via Gemini API
+        async function processAcademicContent() {
+            const text = document.getElementById('docText').value.trim();
+            const subject = document.getElementById('subjectSelect').value;
+
+            if (!text) {
+                alert('يرجى إدخال محتوى الدرس أو اختيار نموذج أولاً!');
+                return;
+            }
+
+            currentText = text;
+            switchTab('summary');
+
+            document.getElementById('summaryEmpty').classList.add('hidden');
+            document.getElementById('summaryResult').classList.add('hidden');
+            document.getElementById('summaryLoading').classList.remove('hidden');
+            document.getElementById('processBtn').disabled = true;
+
+            const systemInstruction = `أنت المساعد الأكاديمي الذكي Pika المتخصص في تحليلات المناهج التعليمية المغربية للثانوي والامتحان الجهوي.
+المادة الدراسية المطلوبة: ${subject}.
+قم بتحليل النص المرفق واستخراج مخرجات مرتبة باللغة العربية بأسلوب JSON فقط بالصيغة التالية:
+{
+  "title": "عنوان شامل ومناسب للدرس",
+  "summary": "ملخص تنفيذي مركز ومبسط في فقرة واحدة متماسكة",
+  "bullets": [
+    "مفهوم أو مصطلح رئيسي 1: الشرح والتعريف المنهجي",
+    "مفهوم أو مصطلح رئيسي 2: الشرح والتعريف المنهجي",
+    "مفهوم أو مصطلح رئيسي 3: الشرح والتعريف المنهجي"
+  ],
+  "conclusion": "توجيهات منهجية والمهارات الأساسية لاجتياز فروض هذه المادة",
+  "quiz": [
+    {
+      "question": "سؤال اختبار تفاعلي 1 متعدد الاختيارات؟",
+      "options": ["خيار 1", "خيار 2", "خيار 3", "خيار 4"],
+      "correct": 0,
+      "explanation": "تعليل وتفسير علمي أو منهجي لسبب صحة هذا الخيار"
+    },
+    {
+      "question": "سؤال اختبار تفاعلي 2 متعدد الاختيارات؟",
+      "options": ["خيار 1", "خيار 2", "خيار 3", "خيار 4"],
+      "correct": 1,
+      "explanation": "تعليل وتفسير علمي أو منهجي لسبب صحة هذا الخيار"
+    },
+    {
+      "question": "سؤال اختبار تفاعلي 3 متعدد الاختيارات؟",
+      "options": ["خيار 1", "خيار 2", "خيار 3", "خيار 4"],
+      "correct": 2,
+      "explanation": "تعليل وتفسير علمي أو منهجي لسبب صحة هذا الخيار"
+    }
+  ]
+}`;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: text }] }],
+                        systemInstruction: { parts: [{ text: systemInstruction }] },
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+
+                const data = await response.json();
+                const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (jsonText) {
+                    currentAnalysis = JSON.parse(jsonText);
+                    renderResults(currentAnalysis, subject);
+                } else {
+                    throw new Error("Invalid format");
+                }
+            } catch (err) {
+                console.error("API error, fallback:", err);
+                generateFallback(text, subject);
+            } finally {
+                document.getElementById('summaryLoading').classList.add('hidden');
+                document.getElementById('processBtn').disabled = false;
+            }
+        }
+
+        function renderResults(data, subject) {
+            document.getElementById('subjectBadge').innerText = subject;
+            document.getElementById('summaryTitle').innerText = data.title || "تحليل الدرس الأكاديمي";
+            document.getElementById('summaryText').innerText = data.summary || "";
+
+            const bulletsUl = document.getElementById('summaryBullets');
+            bulletsUl.innerHTML = '';
+            (data.bullets || []).forEach(b => {
+                const li = document.createElement('li');
+                li.className = "flex items-start gap-2.5 text-xs sm:text-sm text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-800";
+                li.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0"></i><span>${b}</span>`;
+                bulletsUl.appendChild(li);
+            });
+
+            document.getElementById('summaryConclusion').innerText = data.conclusion || "";
+
+            renderQuiz(data.quiz || []);
+            document.getElementById('summaryResult').classList.remove('hidden');
+
+            addChatMessage('ai', `تم تحليل درس **"${data.title}"** بنجاح! يمكنك الآن طرح أي سؤال أو طلب توضيح حول نقاط هذا الدرس.`);
+            lucide.createIcons();
+        }
+
+        // Quiz Renderer
+        function renderQuiz(questions) {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = '';
+            quizScore = 0;
+            answeredQuestions.clear();
+            document.getElementById('quizScore').innerText = `0 / ${questions.length}`;
+
+            document.getElementById('quizEmpty').classList.add('hidden');
+            document.getElementById('quizResult').classList.remove('hidden');
+
+            questions.forEach((q, qIndex) => {
+                const card = document.createElement('div');
+                card.className = "p-4 rounded-2xl border border-slate-800 bg-slate-900/50 space-y-3";
+
+                let optionsHtml = '';
+                q.options.forEach((opt, oIndex) => {
+                    optionsHtml += `
+                        <button onclick="checkQuizAnswer(${qIndex}, ${oIndex}, ${q.correct}, '${q.explanation.replace(/'/g, "\\'")}')" 
+                                id="qbtn-${qIndex}-${oIndex}"
+                                class="w-full text-right p-3 text-xs sm:text-sm rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-purple-600/20 hover:border-purple-500/50 transition text-slate-200 flex items-center justify-between font-medium">
+                            <span>${opt}</span>
+                            <i id="qicon-${qIndex}-${oIndex}" data-lucide="circle" class="w-4 h-4 text-slate-500"></i>
+                        </button>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <h4 class="font-bold text-xs sm:text-sm text-slate-200 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 text-xs flex items-center justify-center font-bold">${qIndex + 1}</span>
+                        ${q.question}
+                    </h4>
+                    <div class="space-y-2 mt-2">
+                        ${optionsHtml}
+                    </div>
+                    <div id="qexplain-${qIndex}" class="hidden p-3 rounded-xl text-xs leading-relaxed font-medium mt-2"></div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function checkQuizAnswer(qIndex, selected, correct, explanation) {
+            if (answeredQuestions.has(qIndex)) return;
+            answeredQuestions.add(qIndex);
+
+            const isCorrect = (selected === correct);
+            if (isCorrect) quizScore++;
+
+            document.getElementById('quizScore').innerText = `${quizScore} / ${currentAnalysis.quiz.length}`;
+
+            const btn = document.getElementById(`qbtn-${qIndex}-${selected}`);
+            const icon = document.getElementById(`qicon-${qIndex}-${selected}`);
+
+            if (isCorrect) {
+                btn.className = 'w-full text-right p-3 text-xs sm:text-sm rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-300 flex items-center justify-between font-medium';
+                icon.outerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>`;
+            } else {
+                btn.className = 'w-full text-right p-3 text-xs sm:text-sm rounded-xl border border-rose-500/50 bg-rose-500/10 text-rose-300 flex items-center justify-between font-medium';
+                icon.outerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>`;
+
+                const correctBtn = document.getElementById(`qbtn-${qIndex}-${correct}`);
+                const correctIcon = document.getElementById(`qicon-${qIndex}-${correct}`);
+                correctBtn.className = 'w-full text-right p-3 text-xs sm:text-sm rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-300 flex items-center justify-between font-medium';
+                correctIcon.outerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>`;
+            }
+
+            const exp = document.getElementById(`qexplain-${qIndex}`);
+            exp.classList.remove('hidden');
+            exp.className = `p-3 rounded-xl text-xs leading-relaxed font-medium mt-2 ${isCorrect ? 'bg-emerald-950/50 text-emerald-200 border border-emerald-500/30' : 'bg-amber-950/50 text-amber-200 border border-amber-500/30'}`;
+            exp.innerHTML = `<strong>${isCorrect ? 'إجابة صحيحة!' : 'التفسير المنهجي:'}</strong> ${explanation}`;
+            lucide.createIcons();
+        }
+
+        function resetCurrentQuiz() {
+            if (currentAnalysis && currentAnalysis.quiz) {
+                renderQuiz(currentAnalysis.quiz);
+            }
+        }
+
+        // Export Utilities
+        function copySummaryText() {
+            if (!currentAnalysis) return;
+            const str = `Pika AI - ${currentAnalysis.title}\n\nالملخص:\n${currentAnalysis.summary}\n\nالمفاهيم:\n${(currentAnalysis.bullets || []).join('\n')}`;
+            const area = document.createElement('textarea');
+            area.value = str;
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand('copy');
+            document.body.removeChild(area);
+            alert('تم نسخ التلخيص بنجاح!');
+        }
+
+        function downloadSummaryFile() {
+            if (!currentAnalysis) return;
+            const str = `=== Pika AI - التلخيص الأكاديمي ===\nالعنوان: ${currentAnalysis.title}\n\nالملخص:\n${currentAnalysis.summary}\n\nالمفاهيم المفتاحية:\n${(currentAnalysis.bullets || []).join('\n')}\n\nالتوجيهات المنهجية:\n${currentAnalysis.conclusion}`;
+            const blob = new Blob([str], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Pika_Summary_${Date.now()}.txt`;
+            a.click();
+        }
+
+        // Chatbot Messaging
+        async function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatField');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            addChatMessage('user', msg);
+            input.value = '';
+
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+
+            const systemPrompt = `أنت المعلم الذكي Pika. قم بالإجابة والشرح بأسلوب تعليمي مبسط ومحفز بناءً على محتوى الدرس التالي:
+"""
+${currentText || "درس أكاديمي عام."}
+"""`;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: msg }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                const data = await response.json();
+                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "لم أستطع فهم السؤال بوضوح، يرجى الاستفسار عن نقطة معينة داخل الدرس.";
+                addChatMessage('ai', reply);
+            } catch (err) {
+                addChatMessage('ai', "حدث خطأ بسيط في الاتصال بالمعلم Pika. يرجى المحاولة مرة أخرى.");
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function addChatMessage(role, text) {
+            const container = document.getElementById('chatLog');
+            const div = document.createElement('div');
+
+            if (role === 'user') {
+                div.className = "flex gap-2.5 items-start justify-end";
+                div.innerHTML = `
+                    <div class="chat-bubble-user p-3.5 max-w-[85%] leading-relaxed shadow-md">
+                        ${escapeHtml(text)}
+                    </div>
+                    <div class="w-7 h-7 rounded-lg bg-purple-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-1 font-bold">
+                        أنت
+                    </div>
+                `;
+            } else {
+                div.className = "flex gap-2.5 items-start";
+                div.innerHTML = `
+                    <div class="w-7 h-7 rounded-lg bg-purple-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-1 font-bold">
+                        P
+                    </div>
+                    <div class="chat-bubble-ai p-3.5 max-w-[85%] leading-relaxed shadow-md">
+                        ${formatMarkdown(text)}
+                    </div>
+                `;
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearChatLog() {
+            document.getElementById('chatLog').innerHTML = '';
+            addChatMessage('ai', 'تم مسح المحادثة. يمكنك الاستفسار عن أي نقطة أخرى.');
+        }
+
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.innerText = t;
+            return d.innerHTML;
+        }
+
+        function formatMarkdown(t) {
+            let str = escapeHtml(t);
+            str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            str = str.replace(/\n/g, '<br>');
+            return str;
+        }
+
+        // Offline / Fallback Generator
+        function generateFallback(text, subject) {
+            const fallback = {
+                title: `ملخص مادة ${subject}`,
+                summary: text.slice(0, 220) + "...",
+                bullets: [
+                    "المفهوم الأكاديمي 1: تحليل الشروط والمبادئ الأساسية في الدرس.",
+                    "المفهوم الأكاديمي 2: استيعاب الآليات والمصطلحات المفتاحية المنهجية.",
+                    "المفهوم الأكاديمي 3: التطبيق المباشر على تمارين الامتحانات والفروض."
+                ],
+                conclusion: "الاستيعاب المنهجي والمنظم للمفاهيم يضمن أعلى النقاط في الفروض والامتحانات.",
+                quiz: [
+                    {
+                        question: "ما هو الشرط المنهجي الأساسي لفهم وتحليل هذا الدرس؟",
+                        options: ["حفظ المصطلحات فقط", "استيعاب المبادئ وربط الأسباب بالنتائج", "تجاهل الأمثلة التطبيقية", "الاعتماد على التخمين"],
+                        correct: 1,
+                        explanation: "الفهم والتحليل المنهجي وربط الأسباب بالنتائج هو المفتاح الحقيقي للتفوق."
+                    },
+                    {
+                        question: "كيف يستفيد الطالب من التلخيص الشامل للمادة؟",
+                        options: ["ترتيب الأفكار وسهولة المراجعة", "تضييع الوقت", "زيادة التشتت", "لا فائدة منه"],
+                        correct: 0,
+                        explanation: "التلخيص يساعد على ترتيب الأفكار وتثبيت المفاهيم الأساسية بسرعة."
+                    }
+                ]
+            };
+            currentAnalysis = fallback;
+            renderResults(fallback, subject);
+        }
+    </script>
+</body>
+</html>
